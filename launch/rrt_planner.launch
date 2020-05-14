@@ -1,0 +1,33 @@
+<launch>
+
+	<master auto="start"/>
+
+	<!-- Robot state publisher from URDF -->
+	<param name="robot_description" textfile="$(find rrt_planner)/robots/r2d2.urdf"/>
+	<!-- <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher" /> -->
+   	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
+
+	<!-- Static transform between /map and /odom (assuming perfect odometry) -->
+	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_broadcaster" args="0 0 0 0 0 0 map odom 100" />
+
+	<!-- Map -->
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find rrt_planner)/maps/maze.yaml" output="screen"/>
+
+	<!-- Move base for navigation stack-->
+   	<node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen"> 
+		<rosparam file="$(find rrt_planner)/config/common_costmap_params.yaml" command="load" ns="global_costmap" /> 
+    	<rosparam file="$(find rrt_planner)/config/common_costmap_params.yaml" command="load" ns="local_costmap" />
+    	<rosparam file="$(find rrt_planner)/config/local_costmap_params.yaml" command="load" />
+    	<rosparam file="$(find rrt_planner)/config/global_costmap_params.yaml" command="load" /> 
+		<rosparam file="$(find rrt_planner)/config/base_local_planner_params.yaml" command="load" />
+
+		<param name="base_global_planner" value="rrt_planner/RRTPlanner" />
+ 	</node>
+
+	<!-- Base controller to publish odom-->
+	<node pkg="rrt_planner" type="base_controller" name="base_controller" output="screen"/>
+
+	<!-- RVIZ for vizualization -->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find rrt_planner)/config/rrt_planner.rviz"/>
+
+</launch> 

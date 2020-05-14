@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(rrt_planner)
+
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  tf
+  nav_core
+  costmap_2d
+  base_local_planner
+  pluginlib
+)
+
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES rrt_planner
+  CATKIN_DEPENDS 
+    roscpp nav_core costmap_2d base_local_planner pluginlib
+)
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+add_library(rrt_planner src/rrt_planner.cpp)
+# add_dependencies(rrt_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(rrt_planner ${catkin_LIBRARIES})
+
+add_executable(base_controller src/base_controller.cpp)
+target_link_libraries(base_controller ${catkin_LIBRARIES})
