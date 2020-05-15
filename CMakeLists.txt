@@ -14,14 +14,14 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+# INCLUDE_DIRS include
   LIBRARIES rrt_planner
   CATKIN_DEPENDS 
     roscpp nav_core costmap_2d base_local_planner pluginlib
 )
 
 include_directories(
-  include
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
