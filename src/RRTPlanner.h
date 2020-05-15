@@ -38,9 +38,8 @@ class RRTPlanner : public nav_core::BaseGlobalPlanner {
   bool initialized_;
 
   double footprintCost(double x, double y, double th) const;
-  RRTree::Pose createRandomValidPose() const;
-  bool isValidPathBetweenPoses(const RRTree::Pose &pose1,
-                               const RRTree::Pose &pose2) const;
+  Pose2D createRandomValidPose() const;
+  bool isValidPathBetweenPoses(const Pose2D &pose1, const Pose2D &pose2) const;
   void buildPlanFromGoal(const RRTree::Node::Ptr goal_node,
                          std::vector<geometry_msgs::PoseStamped> &plan) const;
 };

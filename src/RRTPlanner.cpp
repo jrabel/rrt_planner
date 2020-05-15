@@ -52,7 +52,7 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
     return false;
   }
 
-  ROS_INFO("Got a start: %.2f, %.2f, and a goal: %.2f, %.2f",
+  ROS_INFO("RRTPlanner: Got a start: %.2f, %.2f, and a goal: %.2f, %.2f",
            start.pose.position.x, start.pose.position.y, goal.pose.position.x,
            goal.pose.position.y);
 
@@ -86,12 +86,12 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
 
   double footprint_cost = footprintCost(goal_x, goal_y, goal_yaw);
   if (footprint_cost < 0) {
-    ROS_INFO("RRTPlanner::makePlan: Goal pose intersects an obstacle!");
+    ROS_ERROR("RRTPlanner: Goal pose intersects an obstacle!");
     return false;
   }
 
-  RRTree::Pose start_pose(start_x, start_y, start_yaw);
-  RRTree::Pose goal_pose(goal_x, goal_y, goal_yaw);
+  Pose2D start_pose(start_x, start_y, start_yaw);
+  Pose2D goal_pose(goal_x, goal_y, goal_yaw);
   rrtree_.initialize(start_pose);
 
   RRTree::Node::Ptr goal_node = nullptr;
@@ -99,10 +99,10 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
   int iterations = 0;
 
   while (iterations < max_iterations) {
-    RRTree::Pose random_pose = createRandomValidPose();
+    Pose2D random_pose = createRandomValidPose();
     RRTree::Node::Ptr nearest_node = rrtree_.getNearestNode(random_pose);
-    RRTree::Pose new_pose = RRTree::createPoseWithinRange(
-        nearest_node->pose, random_pose, step_size_);
+    Pose2D new_pose = Pose2D::createPoseWithinRange(nearest_node->pose,
+                                                    random_pose, step_size_);
 
     if (isValidPathBetweenPoses(nearest_node->pose, new_pose)) {
       RRTree::Node::Ptr new_node =
@@ -122,12 +122,12 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
   rrtree_.publishTree();
 
   if (goal_node) {
-    ROS_INFO("goal found!");
+    ROS_INFO("RRTPlanner: a path to the goal was found.");
     buildPlanFromGoal(goal_node, plan);
     publishPlan(plan);
     return true;
   } else {
-    ROS_INFO("goal not found!");
+    ROS_ERROR("RRTPlanner: a path to the goal was not found.");
     return false;
   }
 }
@@ -176,7 +176,7 @@ void RRTPlanner::publishPlan(
   plan_pub_.publish(path_visual);
 }
 
-RRTree::Pose RRTPlanner::createRandomValidPose() const {
+Pose2D RRTPlanner::createRandomValidPose() const {
   // get bounds of the costmap in world coordinates
   double wx_min, wy_min;
   costmap_->mapToWorld(0, 0, wx_min, wy_min);
@@ -198,21 +198,21 @@ RRTree::Pose RRTPlanner::createRandomValidPose() const {
     th_rand = -M_PI + th_rand * (M_PI - -M_PI);
 
     if (footprintCost(wx_rand, wy_rand, th_rand) >= 0) {
-      return RRTree::Pose(wx_rand, wy_rand, th_rand);
+      return Pose2D(wx_rand, wy_rand, th_rand);
     }
   }
 }
 
-bool RRTPlanner::isValidPathBetweenPoses(const RRTree::Pose &pose1,
-                                         const RRTree::Pose &pose2) const {
+bool RRTPlanner::isValidPathBetweenPoses(const Pose2D &pose1,
+                                         const Pose2D &pose2) const {
   double interp_step_size = 0.05;
   double current_step = interp_step_size;
 
-  double distance = RRTree::distanceBetweenPoses(pose1, pose2);
+  double distance = Pose2D::distanceBetweenPoses(pose1, pose2);
 
   while (current_step < distance) {
-    RRTree::Pose interp_pose =
-        RRTree::createPoseWithinRange(pose1, pose2, current_step);
+    Pose2D interp_pose =
+        Pose2D::createPoseWithinRange(pose1, pose2, current_step);
 
     if (footprintCost(interp_pose.x, interp_pose.y, interp_pose.th) < 0)
       return false;

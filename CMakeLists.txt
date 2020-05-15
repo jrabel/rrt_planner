@@ -25,7 +25,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(rrt_planner src/RRTPlanner.cpp src/RRTree.cpp)
+add_library(rrt_planner src/RRTPlanner.cpp src/RRTree.cpp src/Pose2D.cpp)
 # add_dependencies(rrt_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rrt_planner ${catkin_LIBRARIES})
 

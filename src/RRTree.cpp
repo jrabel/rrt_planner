@@ -2,7 +2,6 @@
 
 #include <visualization_msgs/Marker.h>
 
-#include <cmath>
 #include <iostream>
 #include <limits>
 #include <queue>
@@ -16,11 +15,11 @@ RRTree::RRTree() {
 
 RRTree::~RRTree(){};
 
-void RRTree::initialize(const Pose& start_pose) {
+void RRTree::initialize(const Pose2D& start_pose) {
   root_node_ = std::make_shared<Node>(start_pose, nullptr);
 }
 
-RRTree::Node::Ptr RRTree::getNearestNode(const Pose& pose) const {
+RRTree::Node::Ptr RRTree::getNearestNode(const Pose2D& pose) const {
   if (!root_node_) {
     ROS_ERROR(
         "The RRTree has not been initialized, you must call "
@@ -39,7 +38,7 @@ RRTree::Node::Ptr RRTree::getNearestNode(const Pose& pose) const {
     Node::Ptr node = q.front();
     q.pop();
 
-    double distance = distanceBetweenPoses(pose, node->pose);
+    double distance = Pose2D::distanceBetweenPoses(pose, node->pose);
     if (distance < min_distance) {
       min_distance = distance;
       min_node = node;
@@ -97,29 +96,6 @@ void RRTree::publishTree() const {
   }
 
   tree_pub_.publish(line_list);
-}
-
-double RRTree::distanceBetweenPoses(const Pose& pose1, const Pose& pose2) {
-  return std::sqrt((pose1.x - pose2.x) * (pose1.x - pose2.x) +
-                   (pose1.y - pose2.y) * (pose1.y - pose2.y));
-}
-
-RRTree::Pose RRTree::createPoseWithinRange(const RRTree::Pose& start_pose,
-                                           const RRTree::Pose& end_pose,
-                                           double range) {
-  double x_step = end_pose.x - start_pose.x;
-  double y_step = end_pose.y - start_pose.y;
-  double mag = std::sqrt((x_step * x_step) + (y_step * y_step));
-
-  if (mag < range) return end_pose;
-
-  x_step /= mag;
-  y_step /= mag;
-
-  Pose new_pose(start_pose.x + x_step * range, start_pose.y + y_step * range,
-                end_pose.th);
-
-  return new_pose;
 }
 
 };  // namespace rrt_planner
