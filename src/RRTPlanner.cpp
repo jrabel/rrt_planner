@@ -36,7 +36,6 @@ void RRTPlanner::initialize(std::string name,
     plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
 
     initialized_ = true;
-    ROS_DEBUG("The RRT planner has been initialized.");
   } else {
     ROS_WARN("The RRT planner has already been initialized.");
   }
@@ -69,7 +68,6 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
 
   tf::Stamped<tf::Pose> goal_tf;
   tf::Stamped<tf::Pose> start_tf;
-
   poseStampedMsgToTF(goal, goal_tf);
   poseStampedMsgToTF(start, start_tf);
 
@@ -77,25 +75,22 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
   start_tf.getBasis().getEulerYPR(start_yaw, useless_pitch, useless_roll);
   goal_tf.getBasis().getEulerYPR(goal_yaw, useless_pitch, useless_roll);
 
-  // we want to step back along the vector created by the robot's position and
-  // the goal pose until we find a legal cell
   double goal_x = goal.pose.position.x;
   double goal_y = goal.pose.position.y;
   double start_x = start.pose.position.x;
   double start_y = start.pose.position.y;
+  Pose2D start_pose(start_x, start_y, start_yaw);
+  Pose2D goal_pose(goal_x, goal_y, goal_yaw);
 
-  double footprint_cost = footprintCost(goal_x, goal_y, goal_yaw);
-  if (footprint_cost < 0) {
+  if (!isValidPose(goal_pose)) {
     ROS_ERROR("RRTPlanner: Goal pose intersects an obstacle!");
     return false;
   }
 
-  Pose2D start_pose(start_x, start_y, start_yaw);
-  Pose2D goal_pose(goal_x, goal_y, goal_yaw);
   rrtree_.initialize(start_pose);
 
   RRTree::Node::Ptr goal_node = nullptr;
-  int max_iterations = 10000;
+  int max_iterations = 1000000;
   int iterations = 0;
 
   while (iterations < max_iterations) {
@@ -107,15 +102,14 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
     if (isValidPathBetweenPoses(nearest_node->pose, new_pose)) {
       RRTree::Node::Ptr new_node =
           std::make_shared<RRTree::Node>(new_pose, nearest_node);
-      nearest_node->children.push_back(new_node);
+      rrtree_.addNodeToTree(new_node, nearest_node);
 
       if (isValidPathBetweenPoses(new_pose, goal_pose)) {
         goal_node = std::make_shared<RRTree::Node>(goal_pose, new_node);
-        new_node->children.push_back(goal_node);
+        rrtree_.addNodeToTree(goal_node, new_node);
         break;
       }
     }
-
     iterations++;
   }
 
@@ -132,7 +126,7 @@ bool RRTPlanner::makePlan(const geometry_msgs::PoseStamped &start,
   }
 }
 
-double RRTPlanner::footprintCost(double x, double y, double th) const {
+double RRTPlanner::footprintCost(const Pose2D &pose) const {
   if (!initialized_) {
     ROS_ERROR(
         "The RRT Planner has not been initialized, you must call "
@@ -145,8 +139,14 @@ double RRTPlanner::footprintCost(double x, double y, double th) const {
 
   if (footprint.size() < 3) return -1.0;
 
-  double footprint_cost = world_model_->footprintCost(x, y, th, footprint);
-  return footprint_cost;
+  double footprint_cost =
+      world_model_->footprintCost(pose.x, pose.y, pose.th, footprint);
+}
+
+bool RRTPlanner::isValidPose(const Pose2D &pose) const {
+  double footprint_cost = footprintCost(pose);
+  if ((footprint_cost < 0) || (footprint_cost > 128)) return false;
+  return true;
 }
 
 void RRTPlanner::publishPlan(
@@ -197,8 +197,10 @@ Pose2D RRTPlanner::createRandomValidPose() const {
     double th_rand = (double)rand() / RAND_MAX;
     th_rand = -M_PI + th_rand * (M_PI - -M_PI);
 
-    if (footprintCost(wx_rand, wy_rand, th_rand) >= 0) {
-      return Pose2D(wx_rand, wy_rand, th_rand);
+    Pose2D random_pose(wx_rand, wy_rand, th_rand);
+
+    if (isValidPose(random_pose)) {
+      return random_pose;
     }
   }
 }
@@ -214,8 +216,7 @@ bool RRTPlanner::isValidPathBetweenPoses(const Pose2D &pose1,
     Pose2D interp_pose =
         Pose2D::createPoseWithinRange(pose1, pose2, current_step);
 
-    if (footprintCost(interp_pose.x, interp_pose.y, interp_pose.th) < 0)
-      return false;
+    if (!isValidPose(interp_pose)) return false;
 
     current_step += interp_step_size;
   }

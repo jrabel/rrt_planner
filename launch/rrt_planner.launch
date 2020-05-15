@@ -27,7 +27,7 @@
  	</node>
 
 	<!-- Base controller to publish odom-->
-	<node pkg="rrt_planner" type="base_controller" name="base_controller" output="screen"/>
+	<node pkg="rrt_planner" type="base_controller_node" name="base_controller_node" output="screen"/>
 
 	<!-- RVIZ for vizualization -->
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find rrt_planner)/config/rrt_planner.rviz"/>

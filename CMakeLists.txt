@@ -29,5 +29,5 @@ add_library(rrt_planner src/RRTPlanner.cpp src/RRTree.cpp src/Pose2D.cpp)
 # add_dependencies(rrt_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rrt_planner ${catkin_LIBRARIES})
 
-add_executable(base_controller src/base_controller.cpp)
-target_link_libraries(base_controller ${catkin_LIBRARIES})
+add_executable(base_controller_node src/base_controller_node.cpp src/BaseController.cpp src/Pose2D.cpp)
+target_link_libraries(base_controller_node ${catkin_LIBRARIES})

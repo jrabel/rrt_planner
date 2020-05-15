@@ -17,6 +17,31 @@ RRTree::~RRTree(){};
 
 void RRTree::initialize(const Pose2D& start_pose) {
   root_node_ = std::make_shared<Node>(start_pose, nullptr);
+
+  pointcloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pointcloud_index_map_.clear();
+
+  pcl::PointXYZ root_point(start_pose.x, start_pose.y, 0);
+  pointcloud_->points.push_back(root_point);
+  pointcloud_index_map_.insert({0, root_node_});
+
+  double resolution = 1;
+  octree_ =
+      boost::make_shared<pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>>(
+          resolution);
+
+  octree_->setInputCloud(pointcloud_);
+  octree_->addPointsFromInputCloud();
+}
+
+void RRTree::addNodeToTree(Node::Ptr node, Node::Ptr parent) {
+  parent->children.push_back(node);
+
+  pcl::PointXYZ point(node->pose.x, node->pose.y, 0);
+  octree_->addPointToCloud(point, pointcloud_);
+
+  unsigned int index = pointcloud_index_map_.size();
+  pointcloud_index_map_.insert({index, node});
 }
 
 RRTree::Node::Ptr RRTree::getNearestNode(const Pose2D& pose) const {
@@ -27,29 +52,23 @@ RRTree::Node::Ptr RRTree::getNearestNode(const Pose2D& pose) const {
     return nullptr;
   }
 
-  // BFS for closest node
-  std::queue<Node::Ptr> q;
-  q.push(root_node_);
+  pcl::PointXYZ search_point;
+  search_point.x = pose.x;
+  search_point.y = pose.y;
+  search_point.z = 0;
+  int k = 1;
 
-  double min_distance = std::numeric_limits<double>::max();
-  Node::Ptr min_node = nullptr;
+  std::vector<int> point_indices;
+  std::vector<float> point_distances;
 
-  while (!q.empty()) {
-    Node::Ptr node = q.front();
-    q.pop();
-
-    double distance = Pose2D::distanceBetweenPoses(pose, node->pose);
-    if (distance < min_distance) {
-      min_distance = distance;
-      min_node = node;
-    }
-
-    for (const auto& child : node->children) {
-      q.push(child);
-    }
+  if (octree_->nearestKSearch(search_point, k, point_indices, point_distances) >
+      0) {
+    return pointcloud_index_map_.at(point_indices[0]);
+  } else {
+    ROS_ERROR("RRTree::getNearestNode: could not find nearest neighbor.");
   }
 
-  return min_node;
+  return nullptr;
 }
 
 void RRTree::publishTree() const {

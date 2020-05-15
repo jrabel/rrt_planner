@@ -5,9 +5,9 @@ namespace rrt_planner {
 
 class Pose2D {
  public:
-  const double x;
-  const double y;
-  const double th;
+  double x;
+  double y;
+  double th;
 
   Pose2D(double x_i, double y_i, double th_i);
 

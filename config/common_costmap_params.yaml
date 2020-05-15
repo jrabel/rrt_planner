@@ -1,5 +1,4 @@
 footprint: [[0.2, 0.3], [-0.2, 0.3], [-0.2, -0.3], [0.2, -0.3]]
-inflation_radius: 0.3
 
 inflation_layer:
   enabled:              true
