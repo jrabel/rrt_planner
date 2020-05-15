@@ -22,6 +22,8 @@
 		<rosparam file="$(find rrt_planner)/config/base_local_planner_params.yaml" command="load" />
 
 		<param name="base_global_planner" value="rrt_planner/RRTPlanner" />
+		<!-- <param name="base_global_planner" value="navfn/NavfnROS" /> -->
+		<!-- <param name="base_global_planner" value="global_planner/GlobalPlanner" /> -->
  	</node>
 
 	<!-- Base controller to publish odom-->

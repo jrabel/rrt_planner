@@ -6,7 +6,6 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  std_msgs
   tf
   nav_core
   costmap_2d
@@ -26,7 +25,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(rrt_planner src/rrt_planner.cpp)
+add_library(rrt_planner src/RRTPlanner.cpp src/RRTree.cpp)
 # add_dependencies(rrt_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rrt_planner ${catkin_LIBRARIES})
 
